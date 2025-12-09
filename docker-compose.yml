@@ -10,8 +10,6 @@ services:
       POSTGRES_DB: helpchaika
     ports:
       - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     networks:
       - servicepay-network
     healthcheck:
@@ -25,8 +23,6 @@ services:
     container_name: servicepay-redis
     ports:
       - "6379:6379"
-    volumes:
-      - redis_data:/data
     networks:
       - servicepay-network
     healthcheck:
@@ -38,13 +34,34 @@ services:
   backend:
     build: .
     container_name: servicepay-backend
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000"
-    env_file:
-      - .env
-    volumes:
-      - .:/app
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_ACCESS_SECRET_KEY=${JWT_ACCESS_SECRET_KEY:-}
+      - JWT_REFRESH_SECRET_KEY=${JWT_REFRESH_SECRET_KEY:-}
+      - API_BASE_URL=${API_BASE_URL}
+      - ADMIN_PORTAL_URL=${ADMIN_PORTAL_URL}
+      - GUEST_PORTAL_URL=${GUEST_PORTAL_URL}
+      - CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:3000", "http://localhost:3001"]}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+      - SMSAERO_EMAIL=${SMSAERO_EMAIL:-}
+      - SMSAERO_API_KEY=${SMSAERO_API_KEY:-}
+      - EMAIL_PROVIDER=${EMAIL_PROVIDER:-sendgrid}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY:-}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - EMAIL_FROM_NAME=${EMAIL_FROM_NAME}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - DEBUG=${DEBUG:-False}
     depends_on:
       postgres:
         condition: service_healthy
@@ -57,10 +74,25 @@ services:
     build: .
     container_name: servicepay-celery-worker
     command: celery -A app.tasks.celery_app worker -l info
-    env_file:
-      - .env
-    volumes:
-      - .:/app
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+      - SMSAERO_EMAIL=${SMSAERO_EMAIL:-}
+      - SMSAERO_API_KEY=${SMSAERO_API_KEY:-}
+      - EMAIL_PROVIDER=${EMAIL_PROVIDER:-sendgrid}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY:-}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - EMAIL_FROM_NAME=${EMAIL_FROM_NAME}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - DEBUG=${DEBUG:-False}
     depends_on:
       - redis
       - postgres
@@ -71,18 +103,19 @@ services:
     build: .
     container_name: servicepay-celery-beat
     command: celery -A app.tasks.celery_app beat -l info
-    env_file:
-      - .env
-    volumes:
-      - .:/app
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+      - DEBUG=${DEBUG:-False}
     depends_on:
       - redis
     networks:
       - servicepay-network
-
-volumes:
-  postgres_data:
-  redis_data:
 
 networks:
   servicepay-network:
