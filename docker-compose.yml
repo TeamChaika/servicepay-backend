@@ -1,36 +1,6 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: servicepay-postgres
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: helpchaika
-    ports:
-      - "5432:5432"
-    networks:
-      - servicepay-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:7-alpine
-    container_name: servicepay-redis
-    ports:
-      - "6379:6379"
-    networks:
-      - servicepay-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   backend:
     build: .
     container_name: servicepay-backend
@@ -62,11 +32,6 @@ services:
       - SMTP_USER=${SMTP_USER:-}
       - SMTP_PASSWORD=${SMTP_PASSWORD:-}
       - DEBUG=${DEBUG:-False}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     networks:
       - servicepay-network
 
@@ -93,9 +58,6 @@ services:
       - SMTP_USER=${SMTP_USER:-}
       - SMTP_PASSWORD=${SMTP_PASSWORD:-}
       - DEBUG=${DEBUG:-False}
-    depends_on:
-      - redis
-      - postgres
     networks:
       - servicepay-network
 
@@ -112,8 +74,6 @@ services:
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
       - DEBUG=${DEBUG:-False}
-    depends_on:
-      - redis
     networks:
       - servicepay-network
 
